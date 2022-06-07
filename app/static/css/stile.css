@@ -1,0 +1,58 @@
+body nav {
+    margin: 10px 1%;
+    background-color: #E9ECEF;
+}
+
+#dashboard_darsena, #dashboard_social {
+    padding: 10% 0;
+    background: white;
+}
+
+#dashboard_darsena:hover, #dashboard_social:hover {
+    background: whitesmoke;
+}
+
+h1 {
+    font-size: 30px;
+}
+
+h2 {
+    font-size: 23px;
+}
+
+h3 {
+    font-size: 18px;
+}
+
+h4 {
+    font-size: 16px;
+}
+
+#barra_sentiment_resoconto, #barra_sentiment {
+    width: 100%;
+}
+
+.progress {
+    height: 20px;
+    width: 100%;
+}
+
+.legend {
+    text-align: center;
+    display: flex;
+    justify-content: space-around;
+}
+
+.line {
+    height: 50px;
+    border-left: 2px dashed black;
+    margin-top: -31px;
+}
+
+.progress-label {
+    color: black;
+}
+
+textarea {
+    height: 200px;
+}

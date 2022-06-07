@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+Home Page
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active text-dark" aria-current="page">Home</li>
+{% endblock %}
+
+{% block main %}
+<header class="text-center mb-5">
+    <h2>Dashboard</h2>
+</header>
+<ul class="row list-group list-group-horizontal justify-content-around p-0">
+    <li class="list-group-item col-sm-3 col-10 text-center border border-primary border-2 rounded mb-5" id="dashboard_darsena">
+        <a class="text-decoration-none stretched-link fw-bold" href="{{ url_for('visualizza_mood') }}">Mood Darsena</a>
+    </li>
+    <li class="list-group-item col-sm-3 col-10 text-center border border-primary border-2 rounded mb-5" id="dashboard_social">
+        <a class="text-decoration-none stretched-link fw-bold" href="#">Mood social network</a>
+    </li>
+</ul>
+{% endblock %}

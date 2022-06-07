@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dati raccolti
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a class="text-decoration-none text-dark" href="{{ url_for('home') }}">Home</a></li>
+<li class="breadcrumb-item"><a class="text-decoration-none text-dark" href="{{ url_for('visualizza_mood') }}">Grafici</a></li>
+<li class="breadcrumb-item active text-dark" aria-current="page">Dati</li>
+{% endblock %}
+
+{% block main %}
+<header class="text-center mb-4">
+    <h2>Tutti i dati raccolti</h2>
+</header>
+<div>
+    <ul class="list-group">
+        <li class="list-group-item border-0">
+            <div class="row mb-2">
+                <div class="col-lg-3"></div>
+                <div class="col-lg-2">
+                    <label for="filtro" class="form-label m-0 align-middle">Filtra dati:</label>
+                </div>
+                <div class="col-lg-5">
+                    <select name="filtro" id="filtro" class="form-select">
+                        <option value="nessuno">nessun filtro</option>
+                        <option value="positivo">solo positivi</option>
+                        <option value="negativo">solo negativi</option>
+                        <option value="neutrale">solo neutrali</option>
+                    </select>
+                </div>
+                <div class="col-lg-2"></div>
+            </div>    
+        </li>
+        <li class="list-group-item border-0">
+            <div class="row mb-4">
+                <div class="col-lg-3"></div>
+                <div class="col-lg-2">
+                    <label for="ordinamento" class="form-label m-0 align-middle">Ordina dati per:</label>
+                </div>
+                <div class="col-lg-5">
+                    <select name="ordinamento" id="ordinamento" class="form-select">
+                        <option value="data_decresc">data di aggiunta (pi&ugrave; recente)</option>
+                        <option value="data_cresc">data di aggiunta (meno recente)</option>
+                    </select>
+                </div>
+                <div class="col-lg-2"></div>
+            </div>
+        </li>
+    </ul>
+</div>
+
+<section>
+    <ul id="lista_testi" class="list-group">
+        {% for dato in dati %}
+        <li class="list-group-item border border-primary mt-1">
+            <div class="row">
+                <div class="col-md-2 col-5 align-middle text-center">
+                    <p class="m-0">{{ dato.data_aggiunta }}</p>
+                </div>
+                <div class="col-md-7 d-none d-sm-none d-md-block align-middle">
+                    <p class="text-truncate m-0">{{ dato.contenuto }}</p>
+                </div>
+                <div class="col-md-2 col-4 align-middle text-center">
+                    <p class="m-0 text-uppercase">{{ dato.sentiment }}</p>
+                </div>
+                <div class="col-md-1 col-3 align-middle text-center">
+                    <a class="stretched-link" href="{{ url_for('visualizza_dettaglio_testo', idtesto=dato.id_testo) }}"><span class="bi bi-arrow-right-circle-fill"></span></a>
+                </div>
+            </div>
+        </li>
+        {% else %}
+        <li>Nessun dato trovato...</li>
+        {% endfor %}
+    </ul>
+</section>
+
+<footer class="text-center mt-4">
+    <p class="fs-5">Totale testi analizzati: <span class="fw-bold">{{ totale }}</span>
+    {% if totale %}
+    ({{ testi_pos }} positivi - {{ testi_neg }} negativi - {{ testi_neu }} neutrali)
+    {% endif %}
+    </p>
+    <a class="btn btn-primary mt-2" href="{{ url_for('visualizza_mood') }}">Torna indietro</a>
+</footer>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        $("#filtro").change(function() {
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('gestione_testi') }}",
+                data: {
+                    scelta: $("#filtro option:selected").val(),
+                    azione: $(this).attr("name")
+                },
+                success: function(result) {
+                    stampa_elenco_testi(result);
+                }
+            });
+        });
+        $("#ordinamento").change(function() {
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('gestione_testi') }}",
+                data: {
+                    scelta: $("#ordinamento option:selected").val() == "data_decresc" ? "DESC" : "ASC",
+                    azione: $(this).attr("name")
+                },
+                success: function(result) {
+                    stampa_elenco_testi(result);
+                }
+            });
+        });
+
+        function stampa_elenco_testi(result) {
+            $("#lista_testi").empty();  //si cancellano i vecchi dati pre-filtro
+            const dati = result['dati'];
+            if(dati.length == 0) {
+                $("#lista_testi").append(`<li>Nessun dato trovato...</li>`);
+            } else {
+                for(let i = 0; i<dati.length; i++) {
+                    let data_aggiunta = converti_data(dati[i]["data_aggiunta"]);
+                    let li = `
+                    <li class="list-group-item border border-primary mt-1">
+                        <div class="row">
+                            <div class="col-md-2 col-5 align-middle text-center">
+                                <p class="m-0">${data_aggiunta}</p>
+                            </div>
+                            <div class="col-md-7 d-none d-sm-none d-md-block align-middle">
+                                <p class="text-truncate m-0">${dati[i]["contenuto"]}</p>
+                            </div>
+                            <div class="col-md-2 col-4 align-middle text-center">
+                                <p class="m-0 text-uppercase">${dati[i]["sentiment"]}</p>
+                            </div>
+                            <div class="col-md-1 col-3 align-middle text-center">
+                                <a class="stretched-link" href="/home/dashboard-darsena/visualizza-testi/testo-${dati[i]["id_testo"]}"><span class="bi bi-arrow-right-circle-fill"></span></a>
+                            </div>
+                        </div>
+                    </li>
+                    `;
+                    $("#lista_testi").append(li);
+                }
+            }
+        }
+
+        function converti_data(data) {
+            let trasf = new Date(data);
+            let gg = String(trasf.getDate()).padStart(2, '0');
+            let mm = String(trasf.getMonth() + 1).padStart(2, '0');
+            let aaaa = trasf.getFullYear();
+            return aaaa + '-' + mm + '-' + gg;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}
+Registrazione
+{% endblock %}
+
+{% block main %}
+<header class="text-center mb-4">
+    <h2>Inserisci i tuoi dati e richiedi le credenziali per accedere</h2>
+</header>
+<form action="{{ url_for('registra_utente') }}" method="POST">
+    <div class="row">
+        <div class="col-lg-2"></div>
+        <div class="col-lg-8 border border-primary border-2 rounded-3">
+            <div class="row pt-3">
+                <div class="col-1"></div>
+                <div class="col-2">
+                    <label for="nome" class="form-label">Nome:</label>
+                </div>
+                <div class="col-8">
+                    <input type="text" class="form-control" id="nome" name="nome"/>
+                </div>
+                <div class="col-1"></div>
+            </div>
+            <div class="row pt-3">
+                <div class="col-1"></div>
+                <div class="col-2">
+                    <label for="cognome" class="form-label">Cognome:</label>
+                </div>
+                <div class="col-8">
+                    <input type="text" class="form-control" id="cognome" name="cognome"/>
+                </div>
+                <div class="col-1"></div>
+            </div>
+            <div class="row pt-3">
+                <div class="col-1"></div>
+                <div class="col-2">
+                    <label for="mail" class="form-label">E-mail:</label>
+                </div>
+                <div class="col-8">
+                    <input type="email" class="form-control" id="mail" name="mail"/>
+                </div>
+                <div class="col-1"></div>
+            </div>
+            <div class="row pt-4">
+                <div class="col-1"></div>
+                <div class="col-10">
+                    <p>Verrà inviato un messaggio con un lik di attivazione delle credenziali all'indirizzo e-mail indicato.</p>
+                </div>
+                <div class="col-1"></div>
+            </div>
+            <div class="row pt-3">
+                <div class="col-1"></div>
+                <div class="col-10 text-end">
+                    <button type="submit" class="btn btn-primary">Conferma</button>
+                </div>
+                <div class="col-1"></div>
+            </div>
+            <div class="row py-3">
+                <div class="col-1"></div>
+                <div class="col-10 text-end">
+                    <a class="btn btn-primary mt-2" href="{{ url_for('index') }}">Torna indietro</a>
+                </div>
+                <div class="col-1"></div>
+            </div>
+        </div>
+        <div class="col-lg-2"></div>
+    </div>
+</form>
+{% endblock %}

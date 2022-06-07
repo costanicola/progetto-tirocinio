@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}
+Grafici Mood
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a class="text-decoration-none text-dark" href="{{ url_for('home') }}">Home</a></li>
+<li class="breadcrumb-item active text-dark" aria-current="page">Grafici</li>
+{% endblock %}
+
+{% block main %}
+<header class="text-center mb-4">
+    <h2>Visualizzazione del mood e di tutti i dati</h2>
+</header>
+<section>
+    <header class="text-center mb-2">
+        <h3>Mood generale raccolto</h3>
+    </header>
+    <div id="canvas-holder1">
+        <canvas id="piechart"></canvas>
+    </div>
+</section>
+<section>
+    <header class="text-center mt-5 mb-3">
+        <h3>Andamento del mood nel tempo</h3>
+    </header>
+    <div id="canvas-holder2">
+        <canvas id="linechart"></canvas>
+    </div>
+</section>
+<footer class="mt-5">
+    <ul class="list-group list-group-horizontal row text-center">
+        <li class="list-group-item border-0 col-sm-4">
+            <a class="btn btn-primary" href="{{ url_for('analizza_testo') }}">Esegui un'analisi</a>
+        </li>
+        <li class="list-group-item border-0 col-sm-4">
+            <a class="btn btn-primary" href="{{ url_for('visualizza_testi') }}">Vedi dettaglio</a>
+        </li>
+        <li class="list-group-item border-0 col-sm-4">
+            <a class="btn btn-primary" href="{{ url_for('home') }}">Torna indietro</a>
+        </li>
+    </ul>
+</footer>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        //spacchettamento variabili pie chart
+        const numero_pos = parseInt("{{ lista_valori_pie.positivi }}");
+        const numero_neg = parseInt("{{ lista_valori_pie.negativi }}");
+        const numero_neu = parseInt("{{ lista_valori_pie.neutrali }}");
+        const somma = numero_pos + numero_neg + numero_neu;
+        new Chart($("#piechart"), {
+            type: 'pie',
+            data: {
+                labels: ["Positivi", "Negativi", "Neutrali"],
+                datasets: [{
+                    label: "Numero Testi",
+                    backgroundColor: ["#1E88E5", "#D81B60", "#FFC107"],
+                    data: [numero_pos, numero_neg, numero_neu],
+                    hoverOffset: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + " " + context.label + ": " + context.dataset.data[context.dataIndex] + 
+                                " (" + Math.round((context.dataset.data[context.dataIndex] / somma) * 100) + "%)";
+                            }
+                        }
+                    }
+                }  
+            }
+        });
+        //spacchetamento variabili line chart
+        const date_json = JSON.parse('{{ lista_valori_line.date|tojson }}');
+        const date = [];
+        for(let i = 0; i<date_json.length; i++) {
+            date.push(converti_data(date_json[i]));
+        }
+        const numero_pos_line = JSON.parse('{{ lista_valori_line.positivi|tojson }}');
+        const numero_neg_line = JSON.parse('{{ lista_valori_line.negativi|tojson }}');
+        const numero_neu_line = JSON.parse('{{ lista_valori_line.neutrali|tojson }}');
+        new Chart($("#linechart"), {
+            type: 'line',
+            data: {
+                labels: date,
+                datasets: [
+                    {
+                        label: "Positivi",
+                        data: numero_pos_line,
+                        borderColor: "#1E88E5",
+                        backgroundColor: "#1E88E5",
+                        pointStyle: 'rectRot',
+                        pointRadius: 5
+                    },
+                    {
+                        label: "Negativi",
+                        data: numero_neg_line,
+                        borderColor: "#D81B60",
+                        backgroundColor: "#D81B60",
+                        borderDash: [10, 10],
+                        pointStyle: 'rect',
+                        pointRadius: 5
+                    },
+                    {
+                        label: "Neutrali",
+                        data: numero_neu_line,
+                        borderColor: "#FFC107",
+                        backgroundColor: "#FFC107",
+                        borderDash: [15, 3, 3, 3],
+                        pointStyle: 'circle',
+                        pointRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                //maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        displayColors: false
+                    }
+                },
+                elements: {
+                    line: {
+                        tension: 0.1 //arrotondamento
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Giorni'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            beginAtZero: true,
+                            callback: function(value) {
+                                if (value % 1 === 0) {
+                                    return value;
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Numero testi'
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                stacked: false
+            }
+        });
+    });
+
+    function converti_data(data) {
+        let trasf = new Date(data);
+        let gg = String(trasf.getDate()).padStart(2, '0');
+        let mm = String(trasf.getMonth() + 1).padStart(2, '0');
+        let aaaa = trasf.getFullYear();
+        return aaaa + '-' + mm + '-' + gg;
+    }
+</script>
+{% endblock %}

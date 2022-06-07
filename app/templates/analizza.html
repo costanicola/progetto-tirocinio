@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}
+Analizza testo
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a class="text-decoration-none text-dark" href="{{ url_for('home') }}">Home</a></li>
+<li class="breadcrumb-item"><a class="text-decoration-none text-dark" href="{{ url_for('visualizza_mood') }}">Grafici</a></li>
+<li class="breadcrumb-item active text-dark" aria-current="page">Analisi</li>
+{% endblock %}
+
+{% block main %}
+<header class="text-center">
+    <h2>Analisi del sentiment di un testo</h2>
+</header>
+<div class="row">
+    <div class="col-lg-6 mt-4">
+        <div class="row mb-2">
+            <div class="col-12">
+                <label for="spazio_testo">Scrivere qui il testo da analizzare:</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <textarea class="form-control" id="spazio_testo" name="testo"></textarea>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-12">
+                <label for="upload_doc">Altrimenti carica un file (txt, docx, pdf, odt, rtf):</label>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-12">
+                <input type="file" class="form-control" id="upload_doc" name="doc" accept=".pdf, .docx, .txt, .odt, .rtf"/>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mt-4">
+        <article class="text-center">
+            <header>
+                <h3>Risultato analisi</h3>
+            </header>
+            <section>
+                <header class="mt-3">
+                    <h4>Mood</h4>
+                </header>
+                <p>il sentiment rilevato è <span id="etichetta_sentiment" class="fw-bold text-uppercase"></span>:</p>
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div id="barra_sentiment" class="mx-auto">
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="legend">
+                                <p>negativo</p>
+                                <div class="line"></div>
+                                <p>neutrale</p>
+                                <div class="line"></div>
+                                <p>positivo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="mt-3">
+                <header>
+                    <h4>Emozione dominante</h4>
+                </header>
+                <p id="etichetta_feel"></p>
+            </section>
+            <footer class="mt-4">
+                <button type="button"class="btn btn-primary"  id="bottone_salva">Salva risultato</button>
+            </footer>
+        </article>
+    </div>
+</div>
+
+<footer class="mt-5">
+    <ul class="list-group list-group-horizontal row text-center">
+        <li class="list-group-item border-0 col-lg-4">
+            <button type="button" class="btn btn-primary" id="bottone_analisi">Analizza testo</button>
+        </li>
+        <li class="list-group-item border-0 col-lg-4">
+            <button type="button" class="btn btn-primary" id="bottone_cancella">Cancella inserimento</button>
+        </li>
+        <li class="list-group-item border-0 col-lg-4">
+            <a class="btn btn-primary" href="{{ url_for('visualizza_mood') }}">Torna indietro</a>
+        </li>
+    </ul>
+</footer>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="live_toast_analizza" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <p class="me-auto fw-bold">Salvato!</p>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Chiudi"></button>
+        </div>
+        <div class="toast-body">
+            <p id="risposta_salvataggio"></p>
+        </div>
+    </div>
+</div>
+        
+<script type="text/javascript">
+    $(document).ready(function() {
+        $("article").hide();
+
+        //blocco del bottone upload se la textarea contiene qualcosa
+        $("#spazio_testo").on("input", function() {
+            if($(this).val() !== "") {
+                $("#upload_doc").prop("disabled", true);
+            } else {
+                $("#upload_doc").prop("disabled", false);
+            }
+        });
+        //blocco della textarea se l'upload contiene qualcosa
+        $("#upload_doc").on("change", function() {
+            if($(this)[0].files.length !== 0) {
+                $("#spazio_testo").prop("disabled", true);
+            } else {
+                $("#spazio_testo").prop("disabled", false);
+            }
+        });
+        //analisi testo/file inserito
+        $("#bottone_analisi").click(function() {
+            if($.trim($("#spazio_testo").val()) || $("#upload_doc")[0].files.length !== 0) {  //textarea non vuota (e senza solo spazi) o uploader con un file
+                
+                //si prende il testo/file del componente non disabilitato
+                let testo_caricato = $("#spazio_testo").is(":disabled") ? $("#upload_doc").prop("files")[0] : $("#spazio_testo").val();
+                let modalita = $("#spazio_testo").is(":disabled") ? "file" : "mano";
+                //necessario per inviare l'eventuale file con ajax
+                let myFormData = new FormData();  
+
+                myFormData.append('testo', testo_caricato);
+                myFormData.append('azione', $(this).text());
+                myFormData.append('modalita', modalita);
+
+                $.ajax({
+                    type: "POST",
+                    url: "{{ url_for('gestione_analisi') }}",
+                    processData: false,
+                    contentType: false,
+                    data: myFormData,
+                    success: function(result) {
+                        //gestione valori barra sentiment
+                        let contenuto = result.testo
+                        let sentiment = result.etichetta_sentiment;
+                        let val = result.punteggio_sentiment;
+
+                        $(".progress-bar").text(val + "%").attr("aria-valuenow", val);
+                        if(sentiment === "positivo") {
+                            $(".progress-bar").css("background-color", "green").width((round(33.3 * val / 100, 1)) + 66 + "%");
+                        } else if(sentiment === "neutrale") {
+                            $(".progress-bar").css("background-color", "grey").width((round(33.3 * val / 100, 1)) + 36 + "%");
+                        } else {
+                            $(".progress-bar").css("background-color", "red").width(round(33.3 * val / 100, 1) - 2.5 + "%");
+                        }
+
+                        $("#spazio_testo").val(contenuto);
+                        $("#etichetta_sentiment").text(sentiment);
+                        $("#etichetta_feel").text(result.etichetta_feel);
+                    }
+                });
+
+                $("article").show();
+                $("#upload_doc").prop("disabled", true);
+                $("#spazio_testo").prop("disabled", true);
+            }
+
+            function round(value, precision) {
+                let multiplier = Math.pow(10, precision || 0);
+                return Math.round(value * multiplier) / multiplier;
+            }
+        });
+        //salva risultato ottenuto
+        $("#bottone_salva").click(function() {
+            let caricamento = $("#upload_doc")[0].files.length === 0 ? "caricato a mano" : "caricato via file";
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('gestione_analisi') }}",
+                data: {
+                    testo: $("#spazio_testo").val(),
+                    sentiment: $("#etichetta_sentiment").text(),
+                    punteggio: $(".progress-bar").text().replace("%", ""),
+                    feel: $("#etichetta_feel").text(),
+                    origine: caricamento,
+                    azione: $(this).text()
+                },
+                success: function(result) {
+                    let toastLive = $("#live_toast_analizza");
+                    let toast = new bootstrap.Toast(toastLive);
+                    toast.show();
+                    $("#risposta_salvataggio").text(result.risposta);
+                    sblocca_tutto();
+                }
+            });
+        });
+        //cancella testo/file inserito
+        $("#bottone_cancella").click(function() {
+            sblocca_tutto();
+        });
+
+        function sblocca_tutto() {
+            $("#spazio_testo").val("");
+            $("#spazio_testo").prop("disabled", false);
+            $("#upload_doc").val(null);
+            $("#upload_doc").prop("disabled", false);
+            $("article").hide();
+        }
+    });
+</script>
+{% endblock %}

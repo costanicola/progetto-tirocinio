@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}
+Resoconto testo n°{{ dato.id_testo }}
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a class="text-decoration-none text-dark" href="{{ url_for('home') }}">Home</a></li>
+<li class="breadcrumb-item"><a class="text-decoration-none text-dark" href="{{ url_for('visualizza_mood') }}">Grafici</a></li>
+<li class="breadcrumb-item"><a class="text-decoration-none text-dark" href="{{ url_for('visualizza_testi') }}">Dati</a></li>
+<li class="breadcrumb-item active text-dark" aria-current="page">Testo n°{{ dato.id_testo }}</li>
+{% endblock %}
+
+{% block main %}
+<header class="text-center">
+    <h2>Resoconto analisi testo (n°{{ dato.id_testo }}) {{ dato.data_aggiunta }}</h2>
+</header>
+<div class="row mt-4">
+    <div class="col-1"></div>
+    <div class="col-10">
+        <p id="resoconto_contenuto">{{ dato.contenuto }}</p>
+    </div>
+    <div class="col-1"></div>
+</div>
+<hr/>
+<section>
+    <div class="row mt-4">
+        <div class="col-lg-1"></div>
+        <div class="col-lg-2">
+            <header class="text-center text-lg-start">
+                <h3>Mood rilevato:</h3>
+            </header>
+        </div>
+        <div class="col-lg-2 text-center text-lg-start">
+            <p class="text-uppercase fw-bold">{{ dato.sentiment }}</p>
+        </div>
+        <div class="col-lg-7">
+            <div id="barra_sentiment_resoconto" class="mx-auto">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <div class="legend">
+                    <span>negativo</span>
+                    <div class="line"></div>
+                    <span>neutrale</span>
+                    <div class="line"></div>
+                    <span>positivo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<hr/>
+<section>
+    <div class="row mt-4">
+        <div class="col-lg-1"></div>
+        <div class="col-lg-2">
+            <header class="text-center text-lg-start">
+                <h3>Emozione rilevata:</h3>
+            </header>
+        </div>
+        <div class="col-lg-8 text-center text-lg-start">
+            <p class="text-uppercase">{{ dato.feeling }}</p>
+        </div>
+        <div class="col-lg-1"></div>
+    </div>
+</section>
+<hr/>
+<section>
+    <div class="row mt-4">
+        <div class="col-lg-1"></div>
+        <div class="col-lg-2">
+            <header class="text-center text-lg-start">
+                <h3>Provenienza:</h3>
+            </header>
+        </div>
+        <div class="col-lg-8 text-center text-lg-start">
+            <p>{{ dato.origine }} dall'utente {{ dato.nome }} {{ dato.cognome }} ({{ dato.email }})</p>
+        </div>
+        <div class="col-lg-1"></div>
+    </div>
+</section>
+
+<footer class="mt-5">
+    <ul class="list-group list-group-horizontal row text-center">
+        <li class="list-group-item border-0 col-sm-4">
+            <button type="button" class="btn btn-primary" id="bottone_copia">Copia questo testo</button>
+        </li>
+        <li class="list-group-item border-0 col-sm-4">
+            <button type="button" class="btn btn-primary" id="bottone_elimina">Elimina dato</button>
+        </li>
+        <li class="list-group-item border-0 col-sm-4">
+            <a class="btn btn-primary" href="{{ url_for('visualizza_testi') }}">Torna indietro</a>
+        </li>
+    </ul>
+</footer>
+
+<div class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Conferma eliminazione</h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" id="bottone_x">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Vuoi procedere con l'operazione di cancellazione del dato n°{{ dato.id_testo }}?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="conferma_eliminazione">Conferma eliminazione</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="annulla_eliminazione">Annulla</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="live_toast_testo" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <p class="me-auto fw-bold">Testo copiato!</p>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Chiudi"></button>
+        </div>
+        <div class="toast-body">
+            <p>Testo copiato negli appunti</p>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        //gestione valori barra sentiment
+        let sentiment = "{{ dato.sentiment }}";
+        let val = parseFloat("{{ dato.punteggio_sentiment }}");
+
+        $(".progress-bar").text(val + "%").attr("aria-valuenow", val);
+        if(sentiment === "positivo") {
+            $(".progress-bar").css("background-color", "green").width((round(33.3 * val / 100, 1)) + 66 + "%");
+        } else if(sentiment === "neutrale") {
+            $(".progress-bar").css("background-color", "grey").width((round(33.3 * val / 100, 1)) + 36 + "%");
+        } else {
+            $(".progress-bar").css("background-color", "red").width(round(33.3 * val / 100, 1) + "%");
+        }
+
+        const modal = $(".modal").hide();
+
+        $("#bottone_elimina").click(function() {
+            modal.show();
+        });
+
+        //si manda una richiesta al db per eliminare e si va alla pagina precedente
+        $("#conferma_eliminazione").click(function() {
+            $.ajax({
+                method: "POST",
+                url: "{{ url_for('elimina_testo') }}",
+                data: {
+                    idtesto: "{{ dato.id_testo }}"
+                },
+                success: function(result) {
+                    window.location.href = result["risposta"];
+                }
+            });
+        });
+
+        $("#annulla_eliminazione").click(function() {
+            modal.hide();
+        });
+
+        $("#bottone_x").click(function() {
+            modal.hide();
+        });
+        
+        $("#bottone_copia").click(function() {
+            const testo = $("#resoconto_contenuto").text();
+            navigator.clipboard.writeText(testo);
+            const toastLive = $("#live_toast_testo");
+            const toast = new bootstrap.Toast(toastLive);
+            toast.show();
+        });
+
+        function round(value, precision) {
+            let multiplier = Math.pow(10, precision || 0);
+            return Math.round(value * multiplier) / multiplier;
+        }
+    });
+</script>
+{% endblock %}
